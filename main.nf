@@ -105,6 +105,7 @@ params.bwa_meth_index = params.genome ? params.genomes[ params.genome ].bwa_meth
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 params.fasta_index = params.genome ? params.genomes[ params.genome ].fasta_index ?: false : false
 
+
 // Check if genome exists in the config file
 if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
     exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
@@ -140,7 +141,7 @@ else if( params.aligner == 'bwameth' ){
     Channel
         .fromPath(params.fasta, checkIfExists: true)
         .ifEmpty { exit 1, "fasta file not found : ${params.fasta}" }
-        .into { ch_fasta_for_makeBwaMemIndex; ch_fasta_for_makeFastaIndex; ch_fasta_for_methyldackel }
+        .into { ch_fasta_for_makeBwaMemIndex; ch_fasta_for_makeFastaIndex; ch_fasta_for_methyldackel}
 
     if( params.bwa_meth_index ){
         Channel
@@ -287,8 +288,8 @@ if(params.bismark_align_cpu_per_multicore) summary['Bismark align CPUs per --mul
 if(params.bismark_align_mem_per_multicore) summary['Bismark align memory per --multicore'] = params.bismark_align_mem_per_multicore
 summary['Output dir']       = params.outdir
 summary['Launch dir']       = workflow.launchDir
-summary['Working dir']      = workflow.workDir
-summary['Pipeline dir']     = workflow.projectDir
+summary['Working dir']      = params.outdir //workflow.workDir
+summary['Pipeline dir']     = params.outdir //workflow.projectDir
 summary['User']             = workflow.userName
 summary['Config Profile']   = workflow.profile
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
@@ -432,6 +433,30 @@ if( !params.fasta_index && params.aligner == 'bwameth' ){
         """
     }
 }
+
+/*
+ * STEP 0 - getTestFiles
+ */
+//process getTestFiles {
+//    tag "$name"
+//    label 'process_medium'
+//    publishDir "${params.outdir}/test_files", mode: 'copy',
+//        saveAs: { filename ->
+//                      filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"
+//                }
+//
+//    input:
+//    set val(name), file(reads) from ch_test_files
+//
+//    output:
+//    file '*{1,2}.fastq' into ch_read_files_for_fastqc
+//    
+//    script:
+//    """
+//    wget https://zenodo.org/record/557099/files/subset_1.fastq
+//    wget https://zenodo.org/record/557099/files/subset_2.fastq
+//    """
+//}
 
 
 /*
