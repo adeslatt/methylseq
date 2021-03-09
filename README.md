@@ -1,3 +1,8 @@
+# Forked this file from
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.557099.svg)](https://doi.org/10.5281/zenodo.557099)
+
+Added new test data sets
 # ![nf-core/methylseq](docs/images/nf-core-methylseq_logo.png)
 
 [![DOI](https://zenodo.org/badge/124913037.svg)](https://zenodo.org/badge/latestdoi/124913037)
