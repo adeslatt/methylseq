@@ -5,7 +5,7 @@ LABEL authors="Phil Ewels" \
 # Install the conda environment
 COPY environment.yml /
 RUN conda env create -f /environment.yml \
-    && apt-get install libtbb2 \
+    && apt-get install libtbb2 -y \
     && conda clean -a
 
 
