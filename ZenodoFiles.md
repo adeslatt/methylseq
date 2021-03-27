@@ -11,6 +11,23 @@ Felix Krueger, Simon R. Andrews, Bismark: a flexible aligner and methylation cal
 Using [`zenodo-upload`](https://github.com/jhpoelen/zenodo-upload)
 
 Followed required first steps:
+
+This work was done on a `MacBookPro` running `macOS Big Sur`, `Version 11.2.3`.
+
+Default shell on this version is `zsh`.  Actually there is not an option following the [instructions](https://support.apple.com/kb/HT208050). To change the shell for your account to `bash`.   So did it as follows:
+
+## Changing MacOS default shell
+
+From the terminal. Opening a new terminal, you may see:
+
+```bash
+Last login: Fri Mar 26 17:31:14 on ttys003
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+```
+
 i. Installed [`jq`](https://stedolan.github.io/jq/).  On the mac, used `brew install jq`
 
 ii. Installed `curl`
