@@ -1,4 +1,4 @@
-# ZenodoFiles.md
+# Using Zenodo
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](10.5281/zenodo.4625710)
 
@@ -28,9 +28,27 @@ To update your account to use zsh, please run `chsh -s /bin/zsh`.
 For more details, please visit https://support.apple.com/kb/HT208050.
 ```
 
-i. Installed [`jq`](https://stedolan.github.io/jq/).  On the mac, used `brew install jq`
+Change now to the bash shell with the `chsh` (change shell) command
+
+```bash
+chsh -s /bin/bash
+```
+
+If you haven't already installed Conda, then [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+
+i. Install [`jq`](https://stedolan.github.io/jq/).  
+
+On the mac:
+
+```bash
+brew install jq
+```
 
 ii. Installed `curl`
+
+```bash
+conda install -c conda-forge curl
+```
 
 iii. Bash
 
