@@ -34,6 +34,8 @@ Change now to the bash shell with the `chsh` (change shell) command
 chsh -s /bin/bash
 ```
 
+## Pre-requisites for zenodo upload
+
 If you haven't already installed Conda, then [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 i. Install [`jq`](https://stedolan.github.io/jq/).  
@@ -51,4 +53,24 @@ conda install -c conda-forge curl
 ```
 
 iii. Bash
+
+## Upload the files from the MacBook Pro
+
+Two files are uploaded for the publication and ease of access for others
+
+i. hg19_lambda.tar.gz
+ii. Bisulfite_Genome.tar.gz
+
+Uploaded after reserving the `DOI` from Zenodo and getting a personal `zenodo token`, following the instructions [zenodo-upload](https://github.com/jhpoelen/zenodo-upload) provides I typed the following two commands:
+
+```bash
+ ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/hg19_lambda.tar.gz
+ ```
+ 
+ and
+ 
+ ```bash
+  ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/Bisulfite_Genome.tar.gz
+  ```
+  
 
