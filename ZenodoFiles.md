@@ -37,7 +37,7 @@ conda activate zenodo
 
 Now with the environment ready - begin the pre-requisites
 
-## Clone the `[zenodo-upload](https://github.com/jhpoelen/zenodo-upload)` repository
+## Clone the [zenodo-upload](https://github.com/jhpoelen/zenodo-upload) repository
 
 ```bash
 git clone https://github.com/jhpoelen/zenodo-upload.git
