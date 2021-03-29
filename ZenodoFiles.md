@@ -102,16 +102,61 @@ AWS Secret Access Key [None]:  [enter your secret access key]
 iii. cp the files
 
 ```bash
-aws s3 cp s3://file-to-be-copied . --recursive
+(zenodo) $ aws s3 cp s3://file-to-be-copied .
+```
 
 ## Upload the files from the MacBook Pro
 
-Two files are uploaded for the publication and ease of access for others
+To ensure files are the smallest possible to ease in transfer - we will use [pigz](http://zlib.net/pigz/).   Searching [Anaconda](https://anaconda.org/conda-forge/pigz), we find a `conda install`.   Committed to managing our environments with `conda`, we use that.
 
-i. hg19_lambda.tar.gz
-ii. Bisulfite_Genome.tar.gz
+```bash
+(zenodo) $ conda install -c conda-forge pigz
+```
+To get all the files we like up on zenodo, we employ an unfortunate 2-hop process - `to be improved`.
 
-Uploaded after reserving the `DOI` from Zenodo and getting a personal `zenodo token`, following the instructions [zenodo-upload](https://github.com/jhpoelen/zenodo-upload) provides I typed the following two commands:
+Here are the files we wish to transfer.  Note they are not zipped, so we will use `pigz`
+
+```bash
+(zenodo) $ aws s3 ls s3://file-to-be-copied
+
+2020-11-01 22:32:28 3199908007 hg19_lambda.fa
+2020-11-01 22:32:43       8591 hg19_lambda.fa.bis.amb
+2020-11-01 22:32:44       4127 hg19_lambda.fa.bis.ann
+2020-11-01 22:32:45  784290818 hg19_lambda.fa.bis.pac
+2020-11-01 22:33:06 3137163372 hg19_lambda.fa.dau.bwt
+2020-11-01 22:33:40 1568581688 hg19_lambda.fa.dau.sa
+2020-11-01 22:35:07 3137163372 hg19_lambda.fa.par.bwt
+2020-11-01 22:35:40 1568581688 hg19_lambda.fa.par.sa
+```
+
+Now we `pigz` them and transfer 
+
+```bash
+pigz hg19_lambda.fa.par.bwt
+```
+
+reduces filesize from `3.0G` to `1.4G`.
+
+```bash
+(zenodo) $ ls -l
+hg19_lambda.fa.gz
+hg19_lambda.fa.bis.amb.gz
+hg19_lambda.fa.bis.ann.gz
+hg19_lambda.fa.bis.pac.gz
+hg19_lambda.fa.dau.bwt.gz
+hg19_lambda.fa.dau.sa.gz
+hg19_lambda.fa.par.bwt.gz
+hg19_lambda.fa.par.sa.gz
+```
+
+Uploaded after reserving the `DOI` from Zenodo and getting a personal `zenodo token`, following the instructions [zenodo-upload](https://github.com/jhpoelen/zenodo-upload), I set the ZENODO_TOKEN environment variable.  
+
+```bash
+export ZENODO_TOKEN=[`set to your own personal zenodo token`]
+```
+
+
+provides I typed the following two commands:
 
 ```bash
  ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/hg19_lambda.tar.gz
