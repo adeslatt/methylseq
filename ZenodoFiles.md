@@ -105,7 +105,7 @@ iii. cp the files
 (zenodo) $ aws s3 cp s3://file-to-be-copied .
 ```
 
-## Upload the files from the MacBook Pro
+## Upload the files
 
 To ensure files are the smallest possible to ease in transfer - we will use [pigz](http://zlib.net/pigz/).   Searching [Anaconda](https://anaconda.org/conda-forge/pigz), we find a `conda install`.   Committed to managing our environments with `conda`, we use that.
 
