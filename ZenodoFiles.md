@@ -202,9 +202,10 @@ i. upload the `hg19_lambda.tar.gz`
  ```
  
 
-ii.  and
+ii.  and `Bisulfite_Genome.tar.gz`
  
  ```bash
   ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/Bisulfite_Genome.tar.gz
   ```
-then it will upload -- this is using cloudOS on Google and we have transfered the files from an aws s3 bucket to make it even more accessible through zenodo.
+then uploaded using cloudOS on Google and we have transfered the files from an aws s3 bucket to make it even more accessible through zenodo.
+transfer speeds lightening fast in the cloud!
