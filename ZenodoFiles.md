@@ -1,6 +1,6 @@
 # Using Zenodo
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](10.5281/zenodo.4625710)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](https://doi.org/10.5281/zenodo.4625710)
 
 To make the data more accessible and FAIR, the indexed files were transfered to Zenodo using [`zenodo-upload`](https://github.com/jhpoelen/zenodo-upload) from the `Georgetown Lombardi's Comprehensive Cancer Center's Wellstein-Lab` Amazon `S3` bucket.   
 
