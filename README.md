@@ -6,9 +6,13 @@
 
 Using Lifebit's CloudOS system, [references were created and uploaded](https://github.com/adeslatt/methylseq/blob/master/ZenodoFiles.md).
 
+
+
 ## Forked from nf-core
 
 <p align="center"><img src="https://github.com/nf-core/methylseq/blob/master/docs/images/nf-core-methylseq_logo.png" width="250")
+
+
 
 [![DOI](https://zenodo.org/badge/124913037.svg)](https://zenodo.org/badge/latestdoi/124913037)
 [![GitHub Actions CI Status](https://github.com/nf-core/methylseq/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/methylseq/actions)
