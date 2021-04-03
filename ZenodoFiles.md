@@ -97,7 +97,11 @@ We want to make the files small and tight.   We will tar up loose files to ensur
 (zenodo) $ conda install -c conda-forge pigz
 ```
 
-Here are the files we wish to transfer.  Note they are not zipped, so we will use `pigz`
+Here are the files we wish to transfer.  Note they are not `tar'd` or `zipped`, so we will use `tar` and `pigz`.
+
+## hg19_lambda.tar.gz
+
+There are two different sets we will assemble.   We will make a `hg19_lambda.fa.tar.gz` from the following files.
 
 ```bash
 (zenodo) $ aws s3 ls s3://file-to-be-copied
@@ -112,23 +116,75 @@ Here are the files we wish to transfer.  Note they are not zipped, so we will us
 2020-11-01 22:35:40 1568581688 hg19_lambda.fa.par.sa
 ```
 
-i. tar
-
-First we tar them up.
+First we `tar` 
 
 ```bash
 (zenodo) $ tar cvf hg19_lambda.fa.tar hg19_lambda.fa*
 ```
 
-ii.  pigz
+and then we `pigz`.
 
-Now we `pigz` them.
 
 ```bash
 pigz hg19_lambda.fa.tar
 ```
 
-reduces `hg19_lambda.fa.tar` filesize from `7.1G` to `3.9G`.
+reducing `hg19_lambda.fa.tar` filesize from `7.1G` to `3.9G`.
+
+
+## Bisulfite_Genome.tar.gz
+
+We will make a `Bisulfite_Genome.tar.gz` from these files that `Bismark` will expect to find.
+
+At the highest level we find
+
+```bash
+(zenodo) $ ls -l Bisulfite_Genome
+total 8
+drwxr-xr-x 2 jovyan users 4096 Apr  3 18:55 CT_conversion
+drwxr-xr-x 2 jovyan users 4096 Apr  3 19:00 GA_conversion
+```
+
+Then in each of these two different directories we have:
+
+```bash
+(zenodo) $ ls -l Bisulfite_Genome/CT_conversion/
+total 7141488
+-rw-r--r-- 1 jovyan users  969974376 Nov  1 22:30 BS_CT.1.bt2
+-rw-r--r-- 1 jovyan users  724328120 Nov  1 22:30 BS_CT.2.bt2
+-rw-r--r-- 1 jovyan users       4823 Nov  1 22:30 BS_CT.3.bt2
+-rw-r--r-- 1 jovyan users  724328116 Nov  1 22:30 BS_CT.4.bt2
+-rw-r--r-- 1 jovyan users  969974376 Nov  1 22:30 BS_CT.rev.1.bt2
+-rw-r--r-- 1 jovyan users  724328120 Nov  1 22:30 BS_CT.rev.2.bt2
+-rw-r--r-- 1 jovyan users 3199909184 Nov  1 22:31 genome_mfa.CT_conversion.fa
+```
+and 
+
+```bash
+(zenodo) $ ls -l Bisulfite_Genome/GA_conversion/
+total 7141488
+-rw-r--r-- 1 jovyan users  969974376 Nov  1 22:31 BS_GA.1.bt2
+-rw-r--r-- 1 jovyan users  724328120 Nov  1 22:31 BS_GA.2.bt2
+-rw-r--r-- 1 jovyan users       4823 Nov  1 22:31 BS_GA.3.bt2
+-rw-r--r-- 1 jovyan users  724328116 Nov  1 22:31 BS_GA.4.bt2
+-rw-r--r-- 1 jovyan users  969974376 Nov  1 22:31 BS_GA.rev.1.bt2
+-rw-r--r-- 1 jovyan users  724328120 Nov  1 22:32 BS_GA.rev.2.bt2
+-rw-r--r-- 1 jovyan users 3199909184 Nov  1 22:32 genome_mfa.GA_conversion.fa
+```
+First we `tar` 
+
+```bash
+(zenodo) $ tar cvf Bisulfite_Genome.tar Bisulfite_Genome/*
+```
+
+and then we `pigz`.
+
+```bash
+pigz Bisulfite_Genome.tar
+```
+
+reducing `Bisulfite_Genome.tar` filesize from `13G` to `7.5G`.
+
 
 ## upload to Zenodo
 
