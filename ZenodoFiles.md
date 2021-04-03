@@ -10,6 +10,8 @@ Felix Krueger, Simon R. Andrews, Bismark: a flexible aligner and methylation cal
 
 ## Preparing to use [`zenodo-upload`](https://github.com/jhpoelen/zenodo-upload)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](https://doi.org/10.5281/zenodo.4625710)
+
 Followed required first steps:
 ## Preparing for `zenodo-upload` on Lifebit's CloudOS
 
