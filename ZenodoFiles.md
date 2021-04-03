@@ -29,7 +29,7 @@ conda init bash
 exec -l bash
 ```
 
-ii. create and activate a new conda environment `zenodo`.
+ii. create and activate a new conda environment `methylseq`.
 ```bash
 conda create -n zenodo
 conda activate zenodo
@@ -49,13 +49,13 @@ git clone https://github.com/jhpoelen/zenodo-upload.git
 i. Install [`jq`](https://stedolan.github.io/jq/).  
 
 ```bash
-conda install -c conda-forge jq
+conda install -c conda-forge jq -y
 ```
 
 ii. Installed `curl`
 
 ```bash
-conda install -c conda-forge curl
+conda install -c conda-forge curl -y
 ```
 
 iii. Bash
@@ -63,25 +63,9 @@ iii. Bash
 already satisfied.
 
 
-## Changing MacOS default shell
-
-From the terminal. Opening a new terminal, you may see:
-
-```bash
-Last login: Fri Mar 26 17:31:14 on ttys003
-
-The default interactive shell is now zsh.
-To update your account to use zsh, please run `chsh -s /bin/zsh`.
-For more details, please visit https://support.apple.com/kb/HT208050.
-```
-
-Change now to the bash shell with the `chsh` (change shell) command
-
-```bash
-chsh -s /bin/bash
-```
-
 ## Transfering data from an S3 bucket
+
+In our case, we are taking files that were stored in an s3 bucket, tar'ing them up, `pigz`-ing them so that they are uploaded in the most efficient manner (and subsequently downloaded) for the purposes of analysis.
 
 If required to copy from another bucket - you can install the appropriate client, the one needed here is `awscli`.
 
@@ -105,14 +89,13 @@ iii. cp the files
 (zenodo) $ aws s3 cp s3://file-to-be-copied .
 ```
 
-## Upload the files
+## tar and pigz
 
-To ensure files are the smallest possible to ease in transfer - we will use [pigz](http://zlib.net/pigz/).   Searching [Anaconda](https://anaconda.org/conda-forge/pigz), we find a `conda install`.   Committed to managing our environments with `conda`, we use that.
+We want to make the files small and tight.   We will tar up loose files to ensure files are the smallest possible to ease in transfer - we will use [pigz](http://zlib.net/pigz/).   Searching [Anaconda](https://anaconda.org/conda-forge/pigz), we find a `conda install`.   Committed to managing our environments with `conda`, we use that.
 
 ```bash
 (zenodo) $ conda install -c conda-forge pigz
 ```
-To get all the files we like up on zenodo, we employ an unfortunate 2-hop process - `to be improved`.
 
 Here are the files we wish to transfer.  Note they are not zipped, so we will use `pigz`
 
@@ -129,25 +112,25 @@ Here are the files we wish to transfer.  Note they are not zipped, so we will us
 2020-11-01 22:35:40 1568581688 hg19_lambda.fa.par.sa
 ```
 
-Now we `pigz` them and transfer 
+i. tar
+
+First we tar them up.
 
 ```bash
-pigz hg19_lambda.fa.par.bwt
+(zenodo) $ tar cvf hg19_lambda.fa.tar hg19_lambda.fa*
 ```
 
-reduces filesize from `3.0G` to `1.4G`.
+ii.  pigz
+
+Now we `pigz` them.
 
 ```bash
-(zenodo) $ ls -l
-hg19_lambda.fa.gz
-hg19_lambda.fa.bis.amb.gz
-hg19_lambda.fa.bis.ann.gz
-hg19_lambda.fa.bis.pac.gz
-hg19_lambda.fa.dau.bwt.gz
-hg19_lambda.fa.dau.sa.gz
-hg19_lambda.fa.par.bwt.gz
-hg19_lambda.fa.par.sa.gz
+pigz hg19_lambda.fa.tar
 ```
+
+reduces `hg19_lambda.fa.tar` filesize from `7.1G` to `3.9G`.
+
+## upload to Zenodo
 
 Uploaded after reserving the `DOI` from Zenodo and getting a personal `zenodo token`, following the instructions [zenodo-upload](https://github.com/jhpoelen/zenodo-upload), I set the ZENODO_TOKEN environment variable.  
 
@@ -155,17 +138,39 @@ Uploaded after reserving the `DOI` from Zenodo and getting a personal `zenodo to
 export ZENODO_TOKEN=[`set to your own personal zenodo token`]
 ```
 
+## First create the repository on Zenodo
 
-provides I typed the following two commands:
+First, be sure you have created and saved but not published the repository on Zenodo.   Saving it reserves a DOI.  Do not publish until all desired data files are present.
+
+i. upload the `hg19_lambda.tar.gz`
 
 ```bash
  ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/hg19_lambda.tar.gz
  ```
  
- and
+
+ii.  and
  
  ```bash
   ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/Bisulfite_Genome.tar.gz
   ```
-  
+then it will upload -- this is using cloudOS on Google and we have transfered the files from an aws s3 bucket to make it even more accessible through zenodo.
+
+```bash
+(methylseq) jovyan@0b595f0bbcd0:/mnt/shared/gcp-user/session_data/zenodo-upload$ ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda.fa.tar.gz 
+++ echo 4625710
+++ sed 's+^http[s]*://zenodo.org/deposit/++g'
++ DEPOSITION=4625710
++ FILEPATH=../methylseq/data/hg19_lambda.fa.tar.gz
+++ echo ../methylseq/data/hg19_lambda.fa.tar.gz
+++ sed 's+.*/++g'
++ FILENAME=hg19_lambda.fa.tar.gz
+++ curl -H 'Accept: application/json' -H 'Authorization: Bearer xxxxxxxxxxxxxxxxxxx' https://www.zenodo.org/api/deposit/depositions/4625710
+++ jq --raw-output .links.bucket
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  3067  100  3067    0     0   2248      0  0:00:01  0:00:01 --:--:--  2248
++ BUCKET=https://zenodo.org/api/files/38402d50-855d-4815-9388-f2d231c2952a
++ curl --progress-bar -o /dev/null --upload-file ../methylseq/data/hg19_lambda.fa.tar.gz 'https://zenodo.org/api/files/38402d50-855d-4815-9388-f2d231c2952a/hg19_lambda.fa.tar.gz?access_token=PSpI0gExGdMyWLvaPJAlCAetPJxOkavuRWYReKxoZOvbZakC7S0AJXb0moGE'
+######                                                                                                                                                4.5%
 
