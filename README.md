@@ -1,6 +1,6 @@
-# Forked this file from
+Data used in this version may be found here:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.557099.svg)](https://doi.org/10.5281/zenodo.557099)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](https://doi.org/10.5281/zenodo.4625710)
 
 Added new test data sets
 # ![nf-core/methylseq](docs/images/nf-core-methylseq_logo.png)
