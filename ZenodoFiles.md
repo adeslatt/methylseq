@@ -10,11 +10,6 @@ Felix Krueger, Simon R. Andrews, Bismark: a flexible aligner and methylation cal
 
 ## Preparing to use [`zenodo-upload`](https://github.com/jhpoelen/zenodo-upload)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](https://doi.org/10.5281/zenodo.4625710)
-
-Followed required first steps:
-## Preparing for `zenodo-upload` on Lifebit's CloudOS
-
 <p align="center"><img src="https://github.com/lifebit-ai/dry-bench-skills-for-researchers/blob/adds-mini-courses/assets/lifebitCloudOS.png"  width="250" align="right" ></p>
 
 Using Lifebit's CloudOS system, there are no steps to be followed to make access to a bucket that is already authorized in the workspace.  If it is not then a two step process needs to be followed.
@@ -213,22 +208,3 @@ ii.  and
   ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda/Bisulfite_Genome.tar.gz
   ```
 then it will upload -- this is using cloudOS on Google and we have transfered the files from an aws s3 bucket to make it even more accessible through zenodo.
-
-```bash
-(methylseq) jovyan@0b595f0bbcd0:/mnt/shared/gcp-user/session_data/zenodo-upload$ ./zenodo_upload.sh 4625710 ../methylseq/data/hg19_lambda.fa.tar.gz 
-++ echo 4625710
-++ sed 's+^http[s]*://zenodo.org/deposit/++g'
-+ DEPOSITION=4625710
-+ FILEPATH=../methylseq/data/hg19_lambda.fa.tar.gz
-++ echo ../methylseq/data/hg19_lambda.fa.tar.gz
-++ sed 's+.*/++g'
-+ FILENAME=hg19_lambda.fa.tar.gz
-++ curl -H 'Accept: application/json' -H 'Authorization: Bearer xxxxxxxxxxxxxxxxxxx' https://www.zenodo.org/api/deposit/depositions/4625710
-++ jq --raw-output .links.bucket
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  3067  100  3067    0     0   2248      0  0:00:01  0:00:01 --:--:--  2248
-+ BUCKET=https://zenodo.org/api/files/38402d50-855d-4815-9388-f2d231c2952a
-+ curl --progress-bar -o /dev/null --upload-file ../methylseq/data/hg19_lambda.fa.tar.gz 'https://zenodo.org/api/files/38402d50-855d-4815-9388-f2d231c2952a/hg19_lambda.fa.tar.gz?access_token=PSpI0gExGdMyWLvaPJAlCAetPJxOkavuRWYReKxoZOvbZakC7S0AJXb0moGE'
-######                                                                                                                                                4.5%
-
