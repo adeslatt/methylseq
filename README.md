@@ -1,9 +1,18 @@
-# Forked this file from
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4625710.svg)](https://doi.org/10.5281/zenodo.4625710)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.557099.svg)](https://doi.org/10.5281/zenodo.557099)
+## Lifebit's CloudOS 
 
-Added new test data sets
-# ![nf-core/methylseq](docs/images/nf-core-methylseq_logo.png)
+<p align="center"><img src="https://github.com/lifebit-ai/dry-bench-skills-for-researchers/blob/adds-mini-courses/assets/lifebitCloudOS.png"  width="250" align="right" ></p>
+
+Using Lifebit's CloudOS system, [references were created and uploaded](https://github.com/adeslatt/methylseq/blob/master/ZenodoFiles.md).
+
+
+
+## Forked from nf-core
+
+<p align="center"><img src="https://github.com/nf-core/methylseq/blob/master/docs/images/nf-core-methylseq_logo.png" width="250")
+
+
 
 [![DOI](https://zenodo.org/badge/124913037.svg)](https://zenodo.org/badge/latestdoi/124913037)
 [![GitHub Actions CI Status](https://github.com/nf-core/methylseq/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/methylseq/actions)
@@ -98,3 +107,5 @@ You can cite the `nf-core` publication as follows:
 >
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
 > ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
+
+
