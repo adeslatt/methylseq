@@ -1,0 +1,34 @@
+# 2021 March
+#
+#TEST_MethylSeq_Workflow
+
+#trim
+#input = paired-end fastq files
+#pe_fastq_paths
+#s3://wellstein-riegel-archives/Megan_Methylome/Novagene_3.3.21_3superlanes/RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_1.fq.gz
+#s3://wellstein-riegel-archives/Megan_Methylome/Novagene_3.3.21_3superlanes/RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_2.fq.gz
+#BismarkIndex_path s3://wellstein-riegel-archives/Megan_Methylome/Bismark_HumanRef/hg19_lambda/Bisulfite_Genome/
+
+trim_galore --paired -q 20 --clip_R1 10 --clip_R2 10 --three_prime_clip_R1 10 --three_prime_clip_R2 10 --retain_unpaired -r1 20 -r2 20 RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_1.fq.gz RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_2.fq.gz
+
+#align_trimmed_fastqfiles_Bismark
+#input = trimmed pe fastq files
+
+bismark --parallel 3 --non_directional --unmapped --genome_folder /path/to/Human/hg19_lambda/ -1 RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_1_val_1.fq.gz -2 RT100_3_CKDL210001785-1a-1_HVGWJDSXY_L3_2_val_2.fq.gz
+
+#Optional-Deduplicate_alignments(if WGBS)
+
+#Sort+index_inputbam
+for i in $(ls *.bam);
+do samtools sort -@8 -m2G "$i" > "$i".sort
+done ;
+
+for i in *bam.sort
+do
+mv -- "$i" "${i/%.bam.sort/.sort.bam}"
+done ;
+
+for i in *.sort.bam
+do samtools index "$i"
+done ;
+
