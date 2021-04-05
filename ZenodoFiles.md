@@ -209,3 +209,42 @@ ii.  and `Bisulfite_Genome.tar.gz`
   ```
 then uploaded using cloudOS on Google and we have transfered the files from an aws s3 bucket to make it even more accessible through zenodo.
 transfer speeds lightening fast in the cloud!
+
+## downloading from Zenodo
+
+
+<p align="center"><img src="https://github.com/lifebit-ai/dry-bench-skills-for-researchers/blob/adds-mini-courses/assets/lifebitCloudOS.png"  width="250" align="right" ></p>
+
+i.  Using Lifebit's CloudOS system, start a `jupyterlab notebook` (8 vCPU, 64 GB, n2-highmem-8 on Google), with 1500 GB.
+
+ii. Start a `bash command shell`
+
+iii. Initialize `bash`
+
+```bash
+conda init bash
+exec -l bash
+```
+
+iv. Create a `conda` environment
+
+```bash
+conda create -n methylseq -y
+conda activate methylseq
+```
+
+v. clone the `methylseq` repository
+
+```bash
+git clone https://github.com/adeslatt/methylseq.git
+cd methylseq
+```
+
+v. Download your files
+
+```bash
+mkdir data
+cd data
+wget https://zenodo.org/record/4625710/files/Bisulfite_Genome.tar.gz
+wget https://zenodo.org/record/4625710/files/hg19_lambda.fa.tar.gz
+```
