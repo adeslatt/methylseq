@@ -6,6 +6,9 @@
 
 Using Lifebit's CloudOS system, [references were created and uploaded](https://github.com/adeslatt/methylseq/blob/master/ZenodoFiles.md).
 
+## Test Data set used from
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.557099.svg)](https://doi.org/10.5281/zenodo.557099)
 
 
 ## Forked from nf-core
