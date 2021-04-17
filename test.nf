@@ -101,6 +101,11 @@ if (params.help) {
 custom_runName           = params.name
 zenodo_doi               = params.zenodo_reference
 
+
+/*--------------------------------------------------
+  Channel setup
+---------------------------------------------------*/
+
 // set the input channels
 
 ch_multiqc_config        = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
@@ -183,34 +188,35 @@ process getZenodoReference {
     input:
 
     output:
-	file "hg19_lambda.*" into ch_run_me_first
+	file "hg19_lambda.fa.fai" into ch_run_me_first
     script:
-	"""
-    mkdir data
+    """
+    mkdir -p data
     cd data
-    mkdir BismarkIndex
+    mkdir -p BismarkIndex
     cd BismarkIndex
     wget https://zenodo.org/record/$zenodo_doi/files/Bisulfite_Genome.tar.gz
+    tar xzvf Bisulfite_Genome.tar.gz
     cd ..
     wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.tar.gz
-    cd
+    tar xzvf hg19_lambda.tar.gz
+    cd ..
     """
 }
 
-/*
- * Get files
- */
-process getTestFiles {
-    publishDir "test_data", mode: 'copy'
+process getReadsIntoQC {
+    publishDir ".", mode: 'copy'
 
-    output:
-    file "*{1,2}.*" into ch_read_files_for_fastqc, ch_wherearemyfiles_for_trimgalore, ch_wherearemyfiles_for_alignment
+    input:
+    file zenodo_reference from ch_run_me_first
     
+    output:
+    file "${params.reads}" into ch_read_files_for_fastqc, ch_wherearemyfiles_for_trimgalore, ch_wherearemyfiles_for_alignment
     script:
     """
-    wget https://zenodo.org/record/557099/files/subset_1.fastq
-    wget https://zenodo.org/record/557099/files/subset_2.fastq
+    
     """
+
 }
 
 /*
