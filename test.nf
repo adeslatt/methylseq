@@ -94,86 +94,49 @@ if (params.help) {
     exit 0
 }
 
-// set input
-zenodo_doi = params.zenodo_reference
 
-// Validate inputs
-assert params.aligner == 'bwameth' || params.aligner == 'bismark' || params.aligner == 'bismark_hisat' : "Invalid aligner option: ${params.aligner}. Valid options: 'bismark', 'bwameth', 'bismark_hisat'"
-
-Channel
-    .fromPath("$baseDir/assets/where_are_my_files.txt", checkIfExists: true)
-    .into { ch_wherearemyfiles_for_trimgalore; ch_wherearemyfiles_for_alignment }
-
-ch_splicesites_for_bismark_hisat_align = params.known_splices ? Channel.fromPath("${params.known_splices}", checkIfExists: true).collect() : file('null')
-
-if( params.aligner =~ /bismark/ ){
-    assert params.bismark_index || params.fasta : "No reference genome index or fasta file specified"
-    ch_wherearemyfiles_for_alignment.set { ch_wherearemyfiles_for_bismark_align }
-
-    if( params.bismark_index ){
-        Channel
-            .fromPath(params.bismark_index, checkIfExists: true)
-            .ifEmpty { exit 1, "Bismark index file not found: ${params.bismark_index}" }
-            .into { ch_bismark_index_for_bismark_align; ch_bismark_index_for_bismark_methXtract }
-    }
-    else if( params.fasta ){
-        Channel
-            .fromPath(params.fasta, checkIfExists: true)
-            .ifEmpty { exit 1, "fasta file not found : ${params.fasta}" }
-            .set { ch_fasta_for_makeBismarkIndex }
-    }
-}
-else if( params.aligner == 'bwameth' ){
-    assert params.fasta : "No Fasta reference specified! This is required by MethylDackel."
-    ch_wherearemyfiles_for_alignment.into { ch_wherearemyfiles_for_bwamem_align; ch_wherearemyfiles_for_samtools_sort_index_flagstat }
-
-    Channel
-        .fromPath(params.fasta, checkIfExists: true)
-        .ifEmpty { exit 1, "fasta file not found : ${params.fasta}" }
-        .into { ch_fasta_for_makeBwaMemIndex; ch_fasta_for_makeFastaIndex; ch_fasta_for_methyldackel}
-
-    if( params.bwa_meth_index ){
-        Channel
-            .fromPath("${params.bwa_meth_index}*", checkIfExists: true)
-            .ifEmpty { exit 1, "bwa-meth index file(s) not found: ${params.bwa_meth_index}" }
-            .set { ch_bwa_meth_indices_for_bwamem_align }
-        ch_fasta_for_makeBwaMemIndex.close()
-    }
-
-    if( params.fasta_index ){
-        Channel
-            .fromPath(params.fasta_index, checkIfExists: true)
-            .ifEmpty { exit 1, "fasta index file not found: ${params.fasta_index}" }
-            .set { ch_fasta_index_for_methyldackel }
-        ch_fasta_for_makeFastaIndex.close()
-    }
-}
-
-if( workflow.profile == 'uppmax' ){
-    if( !params.project ) exit 1, "No UPPMAX project ID found! Use --project"
-}
-// Stage config files
-ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
-ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
-ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
-
-// Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
-custom_runName = params.name
-if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
-    custom_runName = workflow.runName
-}
 /*
  * SET UP CONFIGURATION VARIABLES
  */
+custom_runName           = params.name
+zenodo_doi               = params.zenodo_reference
 
-// These params need to be set late, after the iGenomes config is loaded
-params.bismark_index = params.genome ? params.genomes[ params.genome ].bismark ?: false : false
-params.bwa_meth_index = params.genome ? params.genomes[ params.genome ].bwa_meth ?: false : false
-params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-params.fasta_index = params.genome ? params.genomes[ params.genome ].fasta_index ?: false : false
+// set the input channels
 
-custom_runName = params.name
+ch_multiqc_config        = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
+ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
+ch_output_docs                          = file("$baseDir/docs/output.md", checkIfExists: true)
+
+ch_flagstat_results_for_multiqc         = Channel.from(false)
+ch_samtools_stats_results_for_multiqc   = Channel.from(false)
+ch_markDups_results_for_multiqc         = Channel.from(false)
+ch_methyldackel_results_for_multiqc     = Channel.from(false)
+
+ch_bismark_index_for_bismark_align      = Channel.fromPath ( params.bismark_index )
+ch_bismark_index_for_bismark_methXtract = Channel.fromPath ( params.bismark_index )
+
+def summary = [:]
+summary['Run Name']  = custom_runName ?: workflow.runName
+summary['Reads']     = params.reads
+summary['Aligner']   = params.aligner
+summary['Data Type'] = params.single_end ? 'Single-End' : 'Paired-End'
+
+
+Channel.from(summary.collect{ [it.key, it.value] })
+    .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
+    .reduce { a, b -> return [a, b].join("\n            ") }
+    .map { x -> """
+    id: 'nf-core-methylseq-summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'nf-core/methylseq Workflow Summary'
+    section_href: 'https://github.com/nf-core/methylseq'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+            $x
+        </dl>
+    """.stripIndent() }
+    .set { ch_workflow_summary }
 
 // Trimming presets
 clip_r1 = params.clip_r1
@@ -211,85 +174,6 @@ else if( params.cegx ){
     three_prime_clip_r2 = 2
 }
 
-// Header log info
-log.info nfcoreHeader()
-def summary = [:]
-summary['Run Name']  = custom_runName ?: workflow.runName
-summary['Reads']     = params.reads
-summary['Aligner']   = params.aligner
-summary['Data Type'] = params.single_end ? 'Single-End' : 'Paired-End'
-if(params.known_splices)    summary['Spliced alignment'] =  'Yes'
-if(params.slamseq)          summary['SLAM-seq'] = 'Yes'
-if(params.local_alignment)  summary['Local alignment'] = 'Yes'
-if(params.genome)           summary['Genome']    = params.genome
-if(params.bismark_index)    summary['Bismark Index'] = params.bismark_index
-if(params.bwa_meth_index)   summary['BWA-Meth Index'] = "${params.bwa_meth_index}*"
-if(params.fasta)            summary['Fasta Ref'] = params.fasta
-if(params.fasta_index)      summary['Fasta Index'] = params.fasta_index
-if(params.rrbs)             summary['RRBS Mode'] = 'On'
-if(params.relax_mismatches) summary['Mismatch Func'] = "L,0,-${params.num_mismatches} (Bismark default = L,0,-0.2)"
-if(params.skip_trimming)    summary['Trimming Step'] = 'Skipped'
-if(params.pbat)             summary['Trim Profile'] = 'PBAT'
-if(params.single_cell)      summary['Trim Profile'] = 'Single Cell'
-if(params.epignome)         summary['Trim Profile'] = 'TruSeq (EpiGnome)'
-if(params.accel)            summary['Trim Profile'] = 'Accel-NGS (Swift)'
-if(params.zymo)             summary['Trim Profile'] = 'Zymo Pico-Methyl'
-if(params.cegx)             summary['Trim Profile'] = 'CEGX'
-summary['Trimming']         = "5'R1: $clip_r1 / 5'R2: $clip_r2 / 3'R1: $three_prime_clip_r1 / 3'R2: $three_prime_clip_r2"
-summary['Deduplication']    = params.skip_deduplication || params.rrbs ? 'No' : 'Yes'
-summary['Directional Mode'] = params.single_cell || params.zymo || params.non_directional ? 'No' : 'Yes'
-summary['All C Contexts']   = params.comprehensive ? 'Yes' : 'No'
-summary['Cytosine report']  = params.cytosine_report ? 'Yes' : 'No'
-if(params.min_depth)        summary['Minimum Depth'] = params.min_depth
-if(params.ignore_flags)     summary['MethylDackel'] = 'Ignoring SAM Flags'
-if(params.methyl_kit)       summary['MethylDackel'] = 'Producing methyl_kit output'
-save_intermeds = [];
-if(params.save_reference)   save_intermeds.add('Reference genome build')
-if(params.save_trimmed)     save_intermeds.add('Trimmed FastQ files')
-if(params.unmapped)         save_intermeds.add('Unmapped reads')
-if(params.save_align_intermeds) save_intermeds.add('Intermediate BAM files')
-if(save_intermeds.size() > 0) summary['Save Intermediates'] = save_intermeds.join(', ')
-if(params.bismark_align_cpu_per_multicore) summary['Bismark align CPUs per --multicore'] = params.bismark_align_cpu_per_multicore
-if(params.bismark_align_mem_per_multicore) summary['Bismark align memory per --multicore'] = params.bismark_align_mem_per_multicore
-summary['Output dir']       = params.outdir
-summary['Launch dir']       = workflow.launchDir
-summary['Working dir']      = params.outdir //workflow.workDir
-summary['Pipeline dir']     = params.outdir //workflow.projectDir
-summary['User']             = workflow.userName
-summary['Config Profile']   = workflow.profile
-if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
-if (workflow.profile.contains('awsbatch')) {
-    summary['AWS Region']   = params.awsregion
-    summary['AWS Queue']    = params.awsqueue
-    summary['AWS CLI']      = params.awscli
-}
-if(params.project) summary['Cluster Project'] = params.project
-if (params.config_profile_description) summary['Config Description'] = params.config_profile_description
-if (params.config_profile_contact)     summary['Config Contact']     = params.config_profile_contact
-if (params.config_profile_url)         summary['Config URL']         = params.config_profile_url
-summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
-if(params.email)            summary['E-mail Address'] = params.email
-if(params.email_on_fail)    summary['E-mail on failure'] = params.email_on_fail
-log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
-log.info "-\033[2m--------------------------------------------------\033[0m-"
-
-Channel.from(summary.collect{ [it.key, it.value] })
-    .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
-    .reduce { a, b -> return [a, b].join("\n            ") }
-    .map { x -> """
-    id: 'nf-core-methylseq-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nf-core/methylseq Workflow Summary'
-    section_href: 'https://github.com/nf-core/methylseq'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
-            $x
-        </dl>
-    """.stripIndent() }
-    .set { ch_workflow_summary }
-
-
 /*
  * Get Zenodo Reference files
  */
@@ -300,7 +184,6 @@ process getZenodoReference {
 
     output:
 	file "hg19_lambda.*" into ch_run_me_first
-
     script:
 	"""
     mkdir data
@@ -314,11 +197,14 @@ process getZenodoReference {
     """
 }
 
+/*
+ * Get files
+ */
 process getTestFiles {
     publishDir "test_data", mode: 'copy'
 
     output:
-    file "*{1,2}.*" into ch_read_files_for_fastqc
+    file "*{1,2}.*" into ch_read_files_for_fastqc, ch_wherearemyfiles_for_trimgalore, ch_wherearemyfiles_for_alignment
     
     script:
     """
@@ -326,7 +212,6 @@ process getTestFiles {
     wget https://zenodo.org/record/557099/files/subset_2.fastq
     """
 }
-
 
 /*
  * Parse software version numbers
@@ -372,74 +257,6 @@ process get_software_versions {
 }
 
 /*
- * PREPROCESSING - Build Bismark index
- */
-if( !params.bismark_index && params.aligner =~ /bismark/ ){
-    process makeBismarkIndex {
-        publishDir path: { params.save_reference ? "${params.outdir}/reference_genome" : params.outdir },
-                   saveAs: { params.save_reference ? it : null }, mode: 'copy'
-
-        input:
-        file fasta from ch_fasta_for_makeBismarkIndex
-
-        output:
-        file "BismarkIndex" into ch_bismark_index_for_bismark_align, ch_bismark_index_for_bismark_methXtract
-
-        script:
-        aligner = params.aligner == 'bismark_hisat' ? '--hisat2' : '--bowtie2'
-        slam = params.slamseq ? '--slam' : ''
-        """
-        mkdir BismarkIndex
-        cp $fasta BismarkIndex/
-        bismark_genome_preparation $aligner $slam BismarkIndex
-        """
-    }
-}
-
-/*
- * PREPROCESSING - Build bwa-mem index
- */
-if( !params.bwa_meth_index && params.aligner == 'bwameth' ){
-    process makeBwaMemIndex {
-        tag "$fasta"
-        publishDir path: "${params.outdir}/reference_genome", saveAs: { params.save_reference ? it : null }, mode: 'copy'
-
-        input:
-        file fasta from ch_fasta_for_makeBwaMemIndex
-
-        output:
-        file "${fasta}*" into ch_bwa_meth_indices_for_bwamem_align
-
-        script:
-        """
-        bwameth.py index $fasta
-        """
-    }
-}
-
-/*
- * PREPROCESSING - Index Fasta file
- */
-if( !params.fasta_index && params.aligner == 'bwameth' ){
-    process makeFastaIndex {
-        tag "$fasta"
-        publishDir path: "${params.outdir}/reference_genome", saveAs: { params.save_reference ? it : null }, mode: 'copy'
-
-        input:
-        file fasta from ch_fasta_for_makeFastaIndex
-
-        output:
-        file "${fasta}.fai" into ch_fasta_index_for_methyldackel
-
-        script:
-        """
-        samtools faidx $fasta
-        """
-    }
-}
-
-
-/*
  * STEP 1 - FastQC
  */
 process fastqc {
@@ -465,52 +282,52 @@ process fastqc {
 /*
  * STEP 2 - Trim Galore!
  */
-    process trim_galore {
-        tag "$name"
-        publishDir "${params.outdir}/trim_galore", mode: 'copy',
-            saveAs: {filename ->
-                if( filename.indexOf("_fastqc") > 0 ) "FastQC/$filename"
-                else if( filename.indexOf("trimming_report.txt" ) > 0) "logs/$filename"
-                else if( !params.save_trimmed && filename == "where_are_my_files.txt" ) filename
-                else if( params.save_trimmed && filename != "where_are_my_files.txt" ) filename
-                else null
-            }
-
-        input:
-        set val(name), file(reads) from ch_read_files_for_trim_galore
-        file wherearemyfiles from ch_wherearemyfiles_for_trimgalore.collect()
-
-        output:
-        set val(name), file('*fq.gz') into ch_trimmed_reads_for_alignment
-        file "*trimming_report.txt" into ch_trim_galore_results_for_multiqc
-        file "*_fastqc.{zip,html}"
-        file "where_are_my_files.txt"
-
-        script:
-        def c_r1 = clip_r1 > 0 ? "--clip_r1 $clip_r1" : ''
-        def c_r2 = clip_r2 > 0 ? "--clip_r2 $clip_r2" : ''
-        def tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 $three_prime_clip_r1" : ''
-        def tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 $three_prime_clip_r2" : ''
-        def rrbs = params.rrbs ? "--rrbs" : ''
-        def cores = 1
-        if(task.cpus){
-            cores = (task.cpus as int) - 4
-            if (params.single_end) cores = (task.cpus as int) - 3
-            if (cores < 1) cores = 1
-            if (cores > 4) cores = 4
+process trim_galore {
+    tag "$name"
+    publishDir "${params.outdir}/trim_galore", mode: 'copy',
+        saveAs: {filename ->
+            if( filename.indexOf("_fastqc") > 0 ) "FastQC/$filename"
+            else if( filename.indexOf("trimming_report.txt" ) > 0) "logs/$filename"
+            else if( !params.save_trimmed && filename == "where_are_my_files.txt" ) filename
+            else if( params.save_trimmed && filename != "where_are_my_files.txt" ) filename
+            else null
         }
-        if( params.single_end ) {
-            """
-            trim_galore --fastqc --gzip $reads \
-              $rrbs $c_r1 $tpc_r1 --cores $cores
-            """
-        } else {
-            """
-            trim_galore --fastqc --gzip --paired $reads \
-              $rrbs $c_r1 $c_r2 $tpc_r1 $tpc_r2 --cores $cores
-            """
-        }
+
+    input:
+    set val(name), file(reads) from ch_read_files_for_trim_galore
+    file wherearemyfiles from ch_wherearemyfiles_for_trimgalore.collect()
+
+    output:
+    set val(name), file('*fq.gz') into ch_trimmed_reads_for_alignment
+    file "*trimming_report.txt" into ch_trim_galore_results_for_multiqc
+    file "*_fastqc.{zip,html}"
+    file "where_are_my_files.txt"
+
+    script:
+    def c_r1 = clip_r1 > 0 ? "--clip_r1 $clip_r1" : ''
+    def c_r2 = clip_r2 > 0 ? "--clip_r2 $clip_r2" : ''
+    def tpc_r1 = three_prime_clip_r1 > 0 ? "--three_prime_clip_r1 $three_prime_clip_r1" : ''
+    def tpc_r2 = three_prime_clip_r2 > 0 ? "--three_prime_clip_r2 $three_prime_clip_r2" : ''
+    def rrbs = params.rrbs ? "--rrbs" : ''
+    def cores = 1
+    if(task.cpus){
+        cores = (task.cpus as int) - 4
+        if (params.single_end) cores = (task.cpus as int) - 3
+        if (cores < 1) cores = 1
+        if (cores > 4) cores = 4
     }
+    if( params.single_end ) {
+        """
+        trim_galore --fastqc --gzip $reads \
+          $rrbs $c_r1 $tpc_r1 --cores $cores
+        """
+    } else {
+        """
+        trim_galore --fastqc --gzip --paired $reads \
+          $rrbs $c_r1 $c_r2 $tpc_r1 $tpc_r2 --cores $cores
+        """
+    }
+}
 
 /*
  * STEP 3.1 - align with Bismark
@@ -530,8 +347,6 @@ if( params.aligner =~ /bismark/ ){
         input:
         set val(name), file(reads) from ch_trimmed_reads_for_alignment
         file index from ch_bismark_index_for_bismark_align.collect()
-        file wherearemyfiles from ch_wherearemyfiles_for_bismark_align.collect()
-        file knownsplices from ch_splicesites_for_bismark_hisat_align
 
         output:
         set val(name), file("*.bam") into ch_bam_for_bismark_deduplicate, ch_bam_for_bismark_summary, ch_bam_for_preseq
@@ -759,161 +574,6 @@ else {
     ch_bismark_mbias_for_multiqc = Channel.from(false)
     ch_bismark_reports_results_for_multiqc = Channel.from(false)
     ch_bismark_summary_results_for_multiqc = Channel.from(false)
-}
-
-
-/*
- * Process with bwa-mem and assorted tools
- */
-if( params.aligner == 'bwameth' ){
-    process bwamem_align {
-        tag "$name"
-        publishDir "${params.outdir}/bwa-mem_alignments", mode: 'copy',
-            saveAs: {filename ->
-                if( !params.save_align_intermeds && filename == "where_are_my_files.txt" ) filename
-                else if( params.save_align_intermeds && filename != "where_are_my_files.txt" ) filename
-                else null
-            }
-
-        input:
-        set val(name), file(reads) from ch_trimmed_reads_for_alignment
-        file bwa_meth_indices from ch_bwa_meth_indices_for_bwamem_align.collect()
-        file wherearemyfiles from ch_wherearemyfiles_for_bwamem_align.collect()
-
-        output:
-        set val(name), file('*.bam') into ch_bam_for_samtools_sort_index_flagstat, ch_bam_for_preseq
-        file "where_are_my_files.txt"
-
-        script:
-        fasta = bwa_meth_indices[0].toString() - '.bwameth' - '.c2t' - '.amb' - '.ann' - '.bwt' - '.pac' - '.sa'
-        prefix = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        """
-        bwameth.py \\
-            --threads ${task.cpus} \\
-            --reference $fasta \\
-            $reads | samtools view -bS - > ${prefix}.bam
-        """
-    }
-
-
-    /*
-     * STEP 4.- samtools flagstat on samples
-     */
-    process samtools_sort_index_flagstat {
-        tag "$name"
-        publishDir "${params.outdir}/bwa-mem_alignments", mode: 'copy',
-            saveAs: {filename ->
-                if(filename.indexOf("report.txt") > 0) "logs/$filename"
-                else if( (!params.save_align_intermeds && !params.skip_deduplication && !params.rrbs).every() && filename == "where_are_my_files.txt") filename
-                else if( (params.save_align_intermeds || params.skip_deduplication || params.rrbs).any() && filename != "where_are_my_files.txt") filename
-                else null
-            }
-
-        input:
-        set val(name), file(bam) from ch_bam_for_samtools_sort_index_flagstat
-        file wherearemyfiles from ch_wherearemyfiles_for_samtools_sort_index_flagstat.collect()
-
-        output:
-        set val(name), file("${bam.baseName}.sorted.bam") into ch_bam_sorted_for_markDuplicates
-        set val(name), file("${bam.baseName}.sorted.bam.bai") into ch_bam_index
-        file "${bam.baseName}_flagstat_report.txt" into ch_flagstat_results_for_multiqc
-        file "${bam.baseName}_stats_report.txt" into ch_samtools_stats_results_for_multiqc
-        file "where_are_my_files.txt"
-
-        script:
-        def avail_mem = task.memory ? ((task.memory.toGiga() - 6) / task.cpus).trunc() : false
-        def sort_mem = avail_mem && avail_mem > 2 ? "-m ${avail_mem}G" : ''
-        """
-        samtools sort $bam \\
-            -@ ${task.cpus} $sort_mem \\
-            -o ${bam.baseName}.sorted.bam
-        samtools index ${bam.baseName}.sorted.bam
-        samtools flagstat ${bam.baseName}.sorted.bam > ${bam.baseName}_flagstat_report.txt
-        samtools stats ${bam.baseName}.sorted.bam > ${bam.baseName}_stats_report.txt
-        """
-    }
-
-    /*
-     * STEP 5 - Mark duplicates
-     */
-    if( params.skip_deduplication || params.rrbs ) {
-        ch_bam_sorted_for_markDuplicates.into { ch_bam_dedup_for_methyldackel; ch_bam_dedup_for_qualimap }
-        ch_bam_index.set { ch_bam_index_for_methyldackel }
-        ch_markDups_results_for_multiqc = Channel.from(false)
-    } else {
-        process markDuplicates {
-            tag "$name"
-            publishDir "${params.outdir}/bwa-mem_markDuplicates", mode: 'copy',
-                saveAs: {filename -> filename.indexOf(".bam") == -1 ? "logs/$filename" : "$filename"}
-
-            input:
-            set val(name), file(bam) from ch_bam_sorted_for_markDuplicates
-
-            output:
-            set val(name), file("${bam.baseName}.markDups.bam") into ch_bam_dedup_for_methyldackel, ch_bam_dedup_for_qualimap
-            set val(name), file("${bam.baseName}.markDups.bam.bai") into ch_bam_index_for_methyldackel //ToDo check if this correctly overrides the original channel
-            file "${bam.baseName}.markDups_metrics.txt" into ch_markDups_results_for_multiqc
-
-            script:
-            if( !task.memory ){
-                log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
-                avail_mem = 3
-            } else {
-                avail_mem = task.memory.toGiga()
-            }
-            """
-            picard -Xmx${avail_mem}g MarkDuplicates \\
-                INPUT=$bam \\
-                OUTPUT=${bam.baseName}.markDups.bam \\
-                METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
-                REMOVE_DUPLICATES=false \\
-                ASSUME_SORTED=true \\
-                PROGRAM_RECORD_ID='null' \\
-                VALIDATION_STRINGENCY=LENIENT
-            samtools index ${bam.baseName}.markDups.bam
-            """
-        }
-    }
-
-    /*
-     * STEP 6 - extract methylation with MethylDackel
-     */
-
-    process methyldackel {
-        tag "$name"
-        publishDir "${params.outdir}/MethylDackel", mode: 'copy'
-
-        input:
-        set val(name),
-            file(bam),
-            file(bam_index),
-            file(fasta),
-            file(fasta_index) from ch_bam_dedup_for_methyldackel
-            .join(ch_bam_index_for_methyldackel)
-            .combine(ch_fasta_for_methyldackel)
-            .combine(ch_fasta_index_for_methyldackel)
-
-
-        output:
-        file "${bam.baseName}*" into ch_methyldackel_results_for_multiqc
-
-        script:
-        all_contexts = params.comprehensive ? '--CHG --CHH' : ''
-        min_depth = params.min_depth > 0 ? "--minDepth ${params.min_depth}" : ''
-        ignore_flags = params.ignore_flags ? "--ignoreFlags" : ''
-        methyl_kit = params.methyl_kit ? "--methylKit" : ''
-        """
-        MethylDackel extract $all_contexts $ignore_flags $methyl_kit $min_depth $fasta $bam
-        MethylDackel mbias $all_contexts $ignore_flags $fasta $bam ${bam.baseName} --txt > ${bam.baseName}_methyldackel.txt
-        """
-    }
-
-} // end of bwa-meth if block
-else {
-    ch_flagstat_results_for_multiqc = Channel.from(false)
-    ch_samtools_stats_results_for_multiqc = Channel.from(false)
-    ch_markDups_results_for_multiqc = Channel.from(false)
-    ch_methyldackel_results_for_multiqc = Channel.from(false)
 }
 
 
