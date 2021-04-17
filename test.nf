@@ -198,8 +198,8 @@ process getZenodoReference {
     wget https://zenodo.org/record/$zenodo_doi/files/Bisulfite_Genome.tar.gz
     tar xzvf Bisulfite_Genome.tar.gz
     cd ..
-    wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.tar.gz
-    tar xzvf hg19_lambda.tar.gz
+    wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.fa.tar.gz
+    tar xzvf hg19_lambda.fa.tar.gz
     cd ..
     """
 }
