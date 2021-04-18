@@ -200,6 +200,7 @@ process getZenodoReference {
     cd ..
     wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.fa.tar.gz
     tar xzvf hg19_lambda.fa.tar.gz
+    samtools faidx hg19_lambda.fa
     cd ..
     """
 }
