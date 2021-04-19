@@ -183,9 +183,10 @@ process getZenodoReference {
     input:
 
     output:
-	file done.txt" into ch_run_me_first
+	file "done.txt" into ch_run_me_first
     script:
     """
+    chmod 775 bin/*.py
     mkdir -p data
     cd data
     mkdir -p BismarkIndex
@@ -196,6 +197,7 @@ process getZenodoReference {
     wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.fa.tar.gz
     tar xzvf hg19_lambda.fa.tar.gz
     samtools faidx hg19_lambda.fa
+    touch done.txt
     cd ..
     """
 }
