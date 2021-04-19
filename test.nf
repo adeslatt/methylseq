@@ -3,15 +3,9 @@
 ========================================================================================
                          adeslatt/methylseq
 ========================================================================================
-forked from nf-core/methylseq
- nf-core/methylseq Analysis Pipeline.
- #### Homepage / Documentation
- https://github.com/nf-core/methylseq
-----------------------------------------------------------------------------------------
 */
 
 def helpMessage() {
-    log.info nfcoreHeader()
     log.info"""
 
     Usage:
@@ -109,6 +103,7 @@ zenodo_doi               = params.zenodo_reference
 // set the input channels
 
 ch_multiqc_config        = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
+// To me This is overly complex - difficult to read and takes more than a few seconds to sort out
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_output_docs                          = file("$baseDir/docs/output.md", checkIfExists: true)
 
@@ -188,7 +183,7 @@ process getZenodoReference {
     input:
 
     output:
-	file "hg19_lambda.fa.fai" into ch_run_me_first
+	file done.txt" into ch_run_me_first
     script:
     """
     mkdir -p data
@@ -198,8 +193,7 @@ process getZenodoReference {
     wget https://zenodo.org/record/$zenodo_doi/files/Bisulfite_Genome.tar.gz
     tar xzvf Bisulfite_Genome.tar.gz
     cd ..
-    wget https://zenodo.org/record/$zenodo_doi/files/hg19_lambda.fa.tar.gz
-    tar xzvf hg19_lambda.fa.tar.gz
+    touch "done.txt"
     cd ..
     """
 }
